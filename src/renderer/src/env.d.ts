@@ -19,6 +19,12 @@ interface Window {
       getForTrack: (rekordboxId: string) => Promise<import('./types').TrackAnalysis | null>
       updateUserOverride: (rekordboxId: string, override: Record<string, unknown>) => Promise<{ success: boolean }>
     }
+    sidecar: {
+      health: () => Promise<import('./types').SidecarHealth | null>
+      queue: (tracks: import('./types').QueueTrackInput[]) => Promise<{ queued: number; total_pending: number }>
+      queueStatus: () => Promise<import('./types').QueueStatus | null>
+      clearQueue: () => Promise<{ ok: boolean }>
+    }
     audio: {
       resolvePath: (filePath: string) => Promise<{ exists: boolean; path: string | null }>
       fileExists: (filePath: string) => Promise<boolean>

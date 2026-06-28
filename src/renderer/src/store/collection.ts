@@ -8,6 +8,7 @@ import type {
   SortDirection,
   ConnectionStatus,
   MyTag,
+  AnalysisProgress,
 } from '../types'
 
 interface CollectionState {
@@ -21,6 +22,10 @@ interface CollectionState {
   isLoadingTracks: boolean
   isLoadingAnalysis: boolean
   loadError: string | null
+
+  // Analysis queue progress
+  analysisProgress: AnalysisProgress | null
+  isAnalyzing: boolean
 
   // Filters & sort
   filters: CollectionFilters
@@ -38,6 +43,10 @@ interface CollectionState {
   setSort: (field: SortField, direction?: SortDirection) => void
   selectTrack: (id: string | null) => void
   getFilteredTracks: () => Track[]
+  analyzeAll: () => Promise<void>
+  stopAnalysis: () => Promise<void>
+  handleAnalysisProgress: (progress: AnalysisProgress) => void
+  handleAnalysisComplete: () => void
 }
 
 const defaultFilters: CollectionFilters = {
@@ -60,6 +69,9 @@ export const useCollectionStore = create<CollectionState>((set, get) => ({
   isLoadingTracks: false,
   isLoadingAnalysis: false,
   loadError: null,
+
+  analysisProgress: null,
+  isAnalyzing: false,
 
   filters: defaultFilters,
   sortField: 'artist',
@@ -118,12 +130,15 @@ export const useCollectionStore = create<CollectionState>((set, get) => ({
         analysisMap.set(a.rekordboxId, a)
       }
 
-      // Update tracks with fresh analysis data
-      const updatedTracks = get().tracks.map((t) => ({
-        ...t,
-        analysis: analysisMap.get(t.id) ?? null,
-        analysisStatus: (analysisMap.has(t.id) ? 'analyzed' : 'none') as Track['analysisStatus'],
-      }))
+      // Update tracks — preserve 'analyzing' status for tracks still in queue
+      const updatedTracks = get().tracks.map((t) => {
+        if (analysisMap.has(t.id)) {
+          return { ...t, analysis: analysisMap.get(t.id)!, analysisStatus: 'analyzed' as const }
+        }
+        // keep 'analyzing' if it was set, otherwise 'none'
+        const keep = t.analysisStatus === 'analyzing' ? 'analyzing' as const : 'none' as const
+        return { ...t, analysis: null, analysisStatus: keep }
+      })
 
       set({ tracks: updatedTracks, analysisMap, isLoadingAnalysis: false })
     } catch (err) {
@@ -143,6 +158,60 @@ export const useCollectionStore = create<CollectionState>((set, get) => ({
   },
 
   selectTrack: (id) => set({ selectedTrackId: id }),
+
+  analyzeAll: async () => {
+    const { tracks, analysisMap } = get()
+    const unanalyzed = tracks.filter(
+      (t) => !analysisMap.has(t.id) && t.filePath
+    )
+    if (unanalyzed.length === 0) return
+
+    // Optimistically mark all queued tracks as 'analyzing'
+    const unanalyzedIds = new Set(unanalyzed.map((t) => t.id))
+    set({
+      isAnalyzing: true,
+      tracks: tracks.map((t) =>
+        unanalyzedIds.has(t.id) ? { ...t, analysisStatus: 'analyzing' as const } : t
+      ),
+    })
+
+    try {
+      await window.api.sidecar.queue(
+        unanalyzed.map((t) => ({
+          rekordboxId: t.id,
+          filePath: t.filePath!,
+          title: t.title,
+          artist: t.artist,
+        }))
+      )
+    } catch (err) {
+      console.error('Failed to queue tracks:', err)
+      set({
+        isAnalyzing: false,
+        tracks: tracks.map((t) =>
+          unanalyzedIds.has(t.id) ? { ...t, analysisStatus: 'none' as const } : t
+        ),
+      })
+    }
+  },
+
+  stopAnalysis: async () => {
+    await window.api.sidecar.clearQueue()
+    set({ isAnalyzing: false, analysisProgress: null })
+  },
+
+  handleAnalysisProgress: (progress) => {
+    set({ analysisProgress: progress, isAnalyzing: progress.isProcessing || progress.pending > 0 })
+    // Refresh analysis from SQLite when new results arrive
+    if (progress.newlySaved > 0) {
+      get().loadAnalysis()
+    }
+  },
+
+  handleAnalysisComplete: () => {
+    set({ isAnalyzing: false })
+    get().loadAnalysis()
+  },
 
   getFilteredTracks: () => {
     const { tracks, filters, sortField, sortDirection } = get()

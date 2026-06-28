@@ -3,6 +3,8 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { setupCollectionHandlers } from './ipc/collection'
 import { setupAudioHandlers } from './ipc/audio'
+import { setupSidecarHandlers } from './ipc/sidecar'
+import { startSidecar, stopSidecar } from './sidecar'
 import { getLocalDb, closeLocalDb } from './db/local'
 
 protocol.registerSchemesAsPrivileged([
@@ -70,6 +72,10 @@ app.whenReady().then(() => {
   // Register IPC handlers
   setupCollectionHandlers()
   setupAudioHandlers()
+  setupSidecarHandlers()
+
+  // Start the Python analysis sidecar in the background (non-blocking)
+  startSidecar().catch((e) => console.error('[Main] Sidecar start error:', e))
 
   createWindow()
 
@@ -79,6 +85,7 @@ app.whenReady().then(() => {
 })
 
 app.on('window-all-closed', () => {
+  stopSidecar()
   closeLocalDb()
   if (process.platform !== 'darwin') {
     app.quit()

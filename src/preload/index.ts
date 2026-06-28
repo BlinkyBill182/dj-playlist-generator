@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
+import type { QueueTrackInput } from '../main/sidecar'
 
 // Typed API exposed to the renderer process via window.api
 export interface ElectronAPI {
@@ -13,6 +14,12 @@ export interface ElectronAPI {
     getAll: () => Promise<import('../main/db/local').LocalTrackAnalysis[]>
     getForTrack: (rekordboxId: string) => Promise<import('../main/db/local').LocalTrackAnalysis | null>
     updateUserOverride: (rekordboxId: string, override: Record<string, unknown>) => Promise<{ success: boolean }>
+  }
+  sidecar: {
+    health: () => Promise<any>
+    queue: (tracks: QueueTrackInput[]) => Promise<{ queued: number; total_pending: number }>
+    queueStatus: () => Promise<any>
+    clearQueue: () => Promise<{ ok: boolean }>
   }
   audio: {
     resolvePath: (filePath: string) => Promise<{ exists: boolean; path: string | null }>
@@ -31,6 +38,12 @@ const api: ElectronAPI = {
     getAll: () => ipcRenderer.invoke('analysis:getAll'),
     getForTrack: (id) => ipcRenderer.invoke('analysis:getForTrack', id),
     updateUserOverride: (id, override) => ipcRenderer.invoke('analysis:updateUserOverride', id, override),
+  },
+  sidecar: {
+    health: () => ipcRenderer.invoke('sidecar:health'),
+    queue: (tracks) => ipcRenderer.invoke('sidecar:queue', tracks),
+    queueStatus: () => ipcRenderer.invoke('sidecar:queueStatus'),
+    clearQueue: () => ipcRenderer.invoke('sidecar:clearQueue'),
   },
   audio: {
     resolvePath: (filePath) => ipcRenderer.invoke('audio:resolvePath', filePath),

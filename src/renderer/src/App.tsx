@@ -9,10 +9,28 @@ export type View = 'collection' | 'playlists' | 'new-playlist' | 'timeline'
 
 export default function App() {
   const [activeView, setActiveView] = useState<View>('collection')
-  const { checkConnection, loadCollection } = useCollectionStore()
+  const {
+    checkConnection,
+    loadCollection,
+    handleAnalysisProgress,
+    handleAnalysisComplete,
+  } = useCollectionStore()
 
   useEffect(() => {
     checkConnection().then(() => loadCollection())
+  }, [])
+
+  // Listen for analysis progress events pushed from the main process
+  useEffect(() => {
+    const { ipcRenderer } = window.electron
+    const onProgress = (_e: unknown, progress: any) => handleAnalysisProgress(progress)
+    const onComplete = (_e: unknown, data: any) => handleAnalysisComplete()
+    ipcRenderer.on('analysis:progress', onProgress)
+    ipcRenderer.on('analysis:complete', onComplete)
+    return () => {
+      ipcRenderer.removeListener('analysis:progress', onProgress)
+      ipcRenderer.removeListener('analysis:complete', onComplete)
+    }
   }, [])
 
   return (

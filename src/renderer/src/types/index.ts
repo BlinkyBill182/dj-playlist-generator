@@ -75,6 +75,43 @@ export interface ConnectionStatus {
   isRunning: boolean
 }
 
+// ---- Analysis sidecar ----
+export interface SidecarHealth {
+  status: string
+  librosa: boolean
+  essentia: boolean
+  queue_length: number
+  done: number
+  errors: number
+  is_processing: boolean
+}
+
+export interface QueueStatus {
+  queue_length: number
+  is_processing: boolean
+  pending: number
+  processing: number
+  done: number
+  error: number
+}
+
+export interface AnalysisProgress {
+  done: number
+  pending: number
+  processing: number
+  error: number
+  total: number
+  isProcessing: boolean
+  newlySaved: number
+}
+
+export interface QueueTrackInput {
+  rekordboxId: string
+  filePath: string
+  title: string
+  artist: string
+}
+
 // ---- Sort / Filter ----
 export type SortField = 'title' | 'artist' | 'bpm' | 'energy' | 'genre' | 'duration' | 'mood'
 export type SortDirection = 'asc' | 'desc'
