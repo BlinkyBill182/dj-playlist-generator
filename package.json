@@ -1,0 +1,74 @@
+{
+  "name": "dj-playlist-generator",
+  "version": "0.1.0",
+  "description": "DJ Playlist Manager — AI-powered playlist generator for Rekordbox",
+  "main": "out/main/index.js",
+  "scripts": {
+    "dev": "unset ELECTRON_RUN_AS_NODE && electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "unset ELECTRON_RUN_AS_NODE && electron-vite preview",
+    "package": "npm run build && electron-builder",
+    "postinstall": "GYP_DEFINES='openssl_no_asm=1' electron-rebuild -f -w better-sqlite3-multiple-ciphers"
+  },
+  "build": {
+    "appId": "com.djplaylist.generator",
+    "productName": "DJ Playlist Generator",
+    "mac": {
+      "category": "public.app-category.music",
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "icon": "resources/icon.icns"
+    },
+    "files": [
+      "out/**/*",
+      "node_modules/better-sqlite3-multiple-ciphers/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "python",
+        "to": "python"
+      }
+    ],
+    "nativeRebuilder": "sequential"
+  },
+  "keywords": [
+    "dj",
+    "playlist",
+    "rekordbox",
+    "music"
+  ],
+  "author": "",
+  "license": "MIT",
+  "type": "commonjs",
+  "devDependencies": {
+    "@electron-toolkit/tsconfig": "^1.0.1",
+    "@electron/rebuild": "^3.7.2",
+    "@tailwindcss/postcss": "^4.3.1",
+    "@tailwindcss/vite": "^4.3.1",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/howler": "^2.2.12",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "autoprefixer": "^10.4.19",
+    "electron": "^42.5.0",
+    "electron-builder": "^24.13.3",
+    "electron-vite": "^5.0.0",
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.19",
+    "typescript": "^5.4.5",
+    "vite": "^7.0.0"
+  },
+  "dependencies": {
+    "@electron-toolkit/preload": "^3.0.1",
+    "@electron-toolkit/utils": "^3.0.0",
+    "better-sqlite3-multiple-ciphers": "^12.11.1",
+    "howler": "^2.2.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "wavesurfer.js": "^7.8.4",
+    "zustand": "^4.5.2"
+  }
+}

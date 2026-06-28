@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+
+# Build output
+out/
+dist/
+dist-electron/
+
+# Electron packager output
+release/
+
+# Local SQLite app database
+*.db
+!python/rekordbox_reader.py
+
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+python/.venv/
+python/venv/
+
+# Environment & secrets
+.env
+.env.local
+.env.*.local
+
+# macOS
+.DS_Store
+*.DS_Store
+
+# Editor
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
